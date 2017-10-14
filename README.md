@@ -1,3 +1,3 @@
 # Git bomb
 
-Node.js port of @Katee's [Git bomb](https://github.com/Katee/git-bomb)
+Node.js port of Kate Murphy's [git bomb](https://kate.io/blog/git-bomb/)
