@@ -1,3 +1,1 @@
-# Git bomb
-
-Node.js port of Kate Murphy's [git bomb](https://kate.io/blog/git-bomb/)
+Node.js port of Kate Murphy's [Python script for making git bombs](https://kate.io/blog/making-your-own-exploding-git-repos/)
