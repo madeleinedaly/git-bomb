@@ -74,7 +74,7 @@ if (require.main === module) {
     // create a commit pointing at our topmost tree
     const commitHash = await writeCommit(treeHash);
 
-    // update master ref
+    // update master ref to point to new commit
     await writeFile('.git/refs/heads/master', commitHash);
   })();
 }
