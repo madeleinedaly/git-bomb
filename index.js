@@ -8,7 +8,7 @@ const writeFile = promisify(require('fs').writeFile);
 const exec = promisify(require('child_process').execFile);
 
 // write a git object and return the hash
-const writeGitObject = async (objectBody, { type }) => {
+const writeObject = async (objectBody, { type }) => {
   const path = await tmpFile();
   await writeFile(path, objectBody);
 
@@ -17,35 +17,36 @@ const writeGitObject = async (objectBody, { type }) => {
 };
 
 // write a git commit and return the hash
-const writeGitCommit = async (treeHash, commitMessage = 'create a git bomb') => {
-  const { stdout } = await exec('git', ['commit-tree', '-m', `"${commitMessage}"`, treeHash]);
+const writeCommit = async treeHash => {
+  const commitMessage = '"create a git bomb"';
+  const { stdout } = await exec('git', ['commit-tree', '-m', commitMessage, treeHash]);
   return stdout;
 };
 
 const by = key => (a, b) => a[key] === b[key] ? 0 : a[key] < b[key] ? 1 : -1;
-const createBlob = body => Buffer.from(body, 'ascii');
-const unhexlify = body => Buffer.from(body, 'hex');
 
 const createTree = (dirs, perm) => {
-  const body = dirs.sort(by('name')).reduce((accumulator, { name, hash }) => {
-    const buffer = Buffer.concat([
-      accumulator,
-      createBlob(perm),
+  const tree = dirs.sort(by('name')).reduce((prevBuffer, { name, hash }) => {
+    const nextBuffer = [
+      Buffer.from(perm, 'ascii'),
       Buffer.from([0x20]),
-      createBlob(name),
+      Buffer.from(name, 'ascii'),
       Buffer.from([0x00]),
-      unhexlify(hash)
-    ]);
+      Buffer.from(hash, 'hex')
+    ];
 
-    return buffer;
+    return Buffer.concat([prevBuffer, ...nextBuffer]);
   }, Buffer.from([]));
 
-  return body;
+  return tree;
 };
+
+const filePerms = '100644';
+const treePerms = '40000';
 
 if (require.main === module) {
   process.on('unhandledRejection', ({ message, code }) => {
-    console.log(message);
+    console.error(message);
     process.exit(code);
   });
 
@@ -55,23 +56,23 @@ if (require.main === module) {
     const blobBody = 'one laugh'; // content of blob at bottom
 
     // create base blob
-    const blobHash = await writeGitObject(createBlob(blobBody), {type: 'blob'});
+    const blobHash = await writeObject(Buffer.from(blobBody, 'ascii'), {type: 'blob'});
 
-    const dirRange = range(width);
-
-    // write tree object containing many files
-    const dirs = dirRange.map(i => ({name: `f${i}`, hash: blobHash}));
-    const rootHash = await writeGitObject(createTree(dirs, '100644'), {type: 'tree'});
+    // write tree object containing the blob `width` times
+    const dirs = range(width).map(i => ({name: `f${i}`, hash: blobHash}));
+    const rootHash = await writeObject(createTree(dirs, filePerms), {type: 'tree'});
 
     // make layers of tree objects using the previous tree object
+    // each tree contains the last tree `width` times
     const treeHash = await asyncReduce(range(depth - 1), async (prevHash, i) => {
-      const otherDirs = dirRange.map(i => ({name: `d${i}`, hash: prevHash}));
+      const otherDirs = range(width).map(i => ({name: `d${i}`, hash: prevHash}));
 
-      const nextHash = await writeGitObject(createTree(otherDirs, '40000'), {type: 'tree'});
+      const nextHash = await writeObject(createTree(otherDirs, treePerms), {type: 'tree'});
       return nextHash;
     }, rootHash);
 
-    const commitHash = await writeGitCommit(treeHash);
+    // create a commit pointing at our topmost tree
+    const commitHash = await writeCommit(treeHash);
 
     // update master ref
     await writeFile('.git/refs/heads/master', commitHash);
