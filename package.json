@@ -1,0 +1,21 @@
+{
+  "name": "git-bomb",
+  "version": "1.0.0",
+  "description": "Node.js port of Kate Murphy's git bomb",
+  "main": "index.js",
+  "author": "Madeleine Daly",
+  "license": "MIT",
+  "engines": {
+    "node": "8.5.0"
+  },
+  "keywords": [
+    "git bomb",
+    "billion laughs",
+    "denial of service"
+  ],
+  "dependencies": {
+    "lodash.range": "3.2.0",
+    "p-reduce": "1.0.0",
+    "tmp": "0.0.33"
+  }
+}
