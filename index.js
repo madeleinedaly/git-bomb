@@ -26,6 +26,7 @@ const writeCommit = async treeHash => {
 const by = key => (a, b) => a[key] === b[key] ? 0 : a[key] < b[key] ? 1 : -1;
 
 // makes a valid git tree object
+// `dirs` is an array of {name, hash} pairs
 const createTree = (dirs, perm) => {
   const tree = dirs.sort(by('name')).reduce((prevBuffer, { name, hash }) => {
     const nextBuffer = [
